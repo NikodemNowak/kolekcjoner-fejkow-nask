@@ -1,0 +1,24 @@
+# Two volumes: `data` holds the material to analyse (known set + new material),
+# `runs` holds the analysis results (the base the UI serves). Copy data in with
+# `kubectl cp` (see README in this folder).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kf-data
+  namespace: kolekcjoner
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kf-runs
+  namespace: kolekcjoner
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 10Gi

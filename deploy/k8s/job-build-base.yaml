@@ -1,0 +1,52 @@
+# One-off job: build the base (campaigns, operators, graph) from the known material.
+# Edit the input folders in `args` to match what you copied into the kf-data volume.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kf-build-base
+  namespace: kolekcjoner
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kf-job
+        app.kubernetes.io/part-of: kolekcjoner-fejkow
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: run
+          image: fakecollector:latest
+          imagePullPolicy: IfNotPresent
+          command: ["fakecollector"]
+          args: ["run", "data/known", "--out", "runs/base", "--profile", "full"]
+          envFrom:
+            - configMapRef:
+                name: kf-config
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests: { cpu: "2", memory: 3Gi }
+            limits: { cpu: "4", memory: 6Gi }
+          volumeMounts:
+            - { name: data, mountPath: /app/data, readOnly: true }
+            - { name: runs, mountPath: /app/runs }
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: kf-data, readOnly: true }
+        - name: runs
+          persistentVolumeClaim: { claimName: kf-runs }
+        - name: tmp
+          emptyDir: {}

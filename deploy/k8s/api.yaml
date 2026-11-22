@@ -1,0 +1,64 @@
+# JSON API (FastAPI) serving the base in runs/base. The Service is named `app` because
+# the web image is built with KF_API_URL=http://app:8600.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kf-api
+  namespace: kolekcjoner
+  labels: { app.kubernetes.io/name: kf-api, app.kubernetes.io/part-of: kolekcjoner-fejkow }
+spec:
+  replicas: 1
+  strategy: { type: Recreate }  # the runs volume is ReadWriteOnce
+  selector:
+    matchLabels: { app.kubernetes.io/name: kf-api }
+  template:
+    metadata:
+      labels: { app.kubernetes.io/name: kf-api, app.kubernetes.io/part-of: kolekcjoner-fejkow }
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: api
+          image: fakecollector:latest
+          imagePullPolicy: IfNotPresent
+          ports: [{ name: http, containerPort: 8600 }]
+          envFrom: [{ configMapRef: { name: kf-config } }]
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: [ALL] }
+          resources:
+            requests: { cpu: "1", memory: 2Gi }
+            limits: { cpu: "4", memory: 6Gi }
+          readinessProbe:
+            httpGet: { path: /api/health, port: http }
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /api/health, port: http }
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          volumeMounts:
+            - { name: data, mountPath: /app/data, readOnly: true }
+            - { name: runs, mountPath: /app/runs }
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: kf-data, readOnly: true }
+        - name: runs
+          persistentVolumeClaim: { claimName: kf-runs }
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app
+  namespace: kolekcjoner
+spec:
+  selector: { app.kubernetes.io/name: kf-api }
+  ports: [{ name: http, port: 8600, targetPort: http }]

@@ -1,0 +1,19 @@
+# mkdir -p runs && docker compose up --build  →  http://localhost:3000 (UI), :8600 (API)
+services:
+  app:  # CLI and JSON API; `docker compose run --rm app fakecollector …` runs the CLI
+    build: { context: ., target: app }
+    image: fakecollector  # fixed name, so `docker run fakecollector …` works too
+    env_file: [.env.example]
+    environment: { APP_RUN_DIR: "${APP_RUN_DIR:-runs/base}" }
+    volumes: ["./data:/app/data:ro", "./runs:/app/runs"]
+    ports: ["127.0.0.1:8600:8600"]
+  web:  # Next.js UI; talks to `app` over the compose network
+    build: { context: ., target: web }
+    image: fakecollector-web
+    depends_on: [app]
+    ports: ["3000:3000"]
+  neo4j:  # optional export target: docker compose --profile neo4j up
+    image: neo4j:5-community
+    profiles: [neo4j]
+    environment: { NEO4J_AUTH: none }
+    ports: ["7474:7474", "7687:7687"]

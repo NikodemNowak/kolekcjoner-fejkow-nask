@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ pl.TITLE }}</title>
+  <style>
+    :root { color-scheme: light; font-family: system-ui, sans-serif; color: #172033; background: #f5f7fa; }
+    body { max-width: 1200px; margin: auto; padding: 1.25rem; }
+    header, section { background: white; border: 1px solid #dbe1e9; border-radius: .5rem;
+      padding: 1.25rem; margin: 1rem 0; }
+    h1 { margin: 0; font-size: 1.7rem; } h2 { margin: 0 0 .8rem; } h3 { margin-bottom: .5rem; }
+    .summary { color: #334155; font-weight: 600; margin-bottom: 0; }
+    .id { color: #475569; font-size: .9rem; overflow-wrap: anywhere; }
+    .members { display: flex; gap: .75rem; flex-wrap: wrap; }
+    .member { border: 1px solid #dbe1e9; border-radius: .35rem; padding: .6rem;
+      min-width: 10rem; max-width: 16rem; overflow-wrap: anywhere; }
+    .member img { display: block; max-width: 100%; max-height: 10rem; margin-bottom: .5rem; }
+    .muted { color: #475569; font-size: .85rem; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: .9rem; }
+    th, td { border-bottom: 1px solid #e2e8f0; padding: .55rem; vertical-align: top;
+      overflow-wrap: anywhere; }
+    th { color: #334155; }
+    .group { padding: .45rem 0; border-bottom: 1px solid #e2e8f0; overflow-wrap: anywhere; }
+    @media (max-width: 640px) { body { padding: .5rem; } header, section { padding: .8rem; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>{{ pl.TITLE }}</h1>
+    <p class="summary">{{ report.summary }}</p>
+  </header>
+  <section>
+    {{ graph | safe }}
+  </section>
+  {% for campaign in report.campaigns %}
+  <section>
+    <h2>{{ campaign.label }}</h2>
+    <p class="id">{{ campaign.id }}{% if campaign.operator %} · {{ pl.REPORT_OPERATORS }}: {{ campaign.operator }}{% endif %}</p>
+    <h3>{{ pl.REPORT_MEMBERS }}</h3>
+    <div class="members">
+      {% for member in campaign.members %}
+      <div class="member">
+        {% if member.thumbnail %}<img src="{{ member.thumbnail }}" alt="{{ pl.REPORT_THUMBNAIL.format(case=member.label) }}">{% endif %}
+        <strong>{{ member.label }}</strong>
+        {% if member.duplicate_of %}<p class="muted">{{ pl.REPORT_DUPLICATE.format(case=member.duplicate_of) }}</p>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    <h3>{{ pl.SINGLETON_PROFILE if campaign.members | length == 1 else pl.REPORT_PROFILE }}</h3>
+    {% if campaign.traits %}
+    <div class="table-wrap"><table>
+      <thead><tr><th>{{ pl.SINGLETON_PROFILE if campaign.members | length == 1 else pl.REPORT_PROFILE }}</th><th>{{ pl.REPORT_COVERAGE }}</th><th>{{ pl.REPORT_LIFT }}</th></tr></thead>
+      <tbody>{% for trait in campaign.traits %}
+        <tr><td><strong>{{ trait.value }}</strong> <span class="muted">({% if campaign.members | length == 1 %}{{ pl.SINGLETON_TRAIT }}{% else %}{{ pl.REPORT_TRAIT_CONSTANT if trait.kind == "constant" else pl.REPORT_TRAIT_ROTATING }}{% endif %})</span>{% if campaign.members | length != 1 %}<br>{{ trait.why }}{% endif %}</td>
+          <td>{{ "%.0f" | format(trait.coverage * 100) }}%</td><td>{{ "%.2f" | format(trait.lift) }}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+    {% else %}<p>{{ pl.SINGLETON_NO_TRAITS if campaign.members | length == 1 else pl.REPORT_NO_TRAITS }}</p>{% endif %}
+    <h3>{{ pl.REPORT_EVIDENCE }}</h3>
+    {% if campaign.evidence %}
+    <div class="table-wrap"><table>
+      <thead><tr><th>{{ pl.REPORT_MEMBERS }}</th><th>{{ pl.REPORT_EVIDENCE }}</th>
+        <th>{{ pl.REPORT_CONFIDENCE }}</th><th>{{ pl.REPORT_ARTIFACTS }}</th></tr></thead>
+      <tbody>{% for item in campaign.evidence %}
+        <tr><td>{{ item.cases }}</td><td><strong>{{ item.family }}</strong><br>{{ item.detail }}</td>
+          <td>{{ "%.2f" | format(item.weight) }}</td><td>{{ item.artifacts | join(", ") }}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+    {% else %}<p>{{ pl.REPORT_NO_EVIDENCE }}</p>{% endif %}
+  </section>
+  {% endfor %}
+  <section>
+    <h2>{{ pl.REPORT_OPERATORS }}</h2>
+    {% for group in report.operators %}<div class="group"><strong>{{ group.label }}</strong> · {{ group.cases | join(", ") }}
+      {% for item in group.evidence %}<p>{{ pl.GROUP_ENTITY_NAMES.get(item.entity_type, pl.GROUP_TRACE) }}: {{ item.value }} — {% for source in item.sources %}{{ source.case_id }} ({{ source.artifacts | join(", ") }}){% if not loop.last %}; {% endif %}{% endfor %}</p>{% endfor %}</div>
+    {% else %}<p>{{ pl.REPORT_NO_GROUPS }}</p>{% endfor %}
+  </section>
+  <section>
+    <h2>{{ pl.REPORT_TOOLKITS }}</h2>
+    {% for group in report.toolkits %}<div class="group"><strong>{{ group.label }}</strong> · {{ group.cases | join(", ") }}
+      {% for item in group.evidence %}<p>{{ pl.GROUP_ENTITY_NAMES.get(item.entity_type, pl.GROUP_TRACE) }}: {{ item.value }} — {% for source in item.sources %}{{ source.case_id }} ({{ source.artifacts | join(", ") }}){% if not loop.last %}; {% endif %}{% endfor %}</p>{% endfor %}</div>
+    {% else %}<p>{{ pl.REPORT_NO_GROUPS }}</p>{% endfor %}
+  </section>
+  <footer><p class="muted">{{ pl.REPORT_DATA_NOTICE }}</p></footer>
+</body>
+</html>

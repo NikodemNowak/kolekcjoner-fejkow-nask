@@ -1,0 +1,7 @@
+case_id,campaign,operator,toolkit,note
+F:f1,A,O1,aio-kit,Shared landing with F:f2
+F:f2,A,O1,aio-kit,Same landing on a second domain
+F:f3,B,O1,aio-kit,Same tenant as F:f1; shares kit landing B with the cloaked F:f4
+F:f4,B,O2,aio-kit,Cloaking fixture; its shop variant has the same text and pixel as F:f6
+F:f5,S:F:f5,,,Screenshot-only case
+F:f6,B,O2,aio-kit,Same shop text and pixel as the cloaked variant of F:f4

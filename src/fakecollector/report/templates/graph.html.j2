@@ -1,0 +1,178 @@
+<style>
+  .fc-controls { display: flex; flex-wrap: wrap; gap: .5rem .9rem; align-items: center; margin: .75rem 0; font: 14px/1.4 system-ui, sans-serif; }
+  .fc-controls label { white-space: nowrap; font-size: .85rem; display: inline-flex; align-items: center; gap: .3rem; }
+  .fc-controls button { padding: .35rem .7rem; cursor: pointer; border: 1px solid #cbd5e1; background: #f8fafc; border-radius: .35rem; font-size: .85rem; }
+  .fc-controls button[aria-pressed="true"] { background: #1e293b; color: #fff; border-color: #1e293b; }
+  .fc-swatch { display: inline-block; width: .9rem; height: .3rem; border-radius: .15rem; }
+  #fc-graph { height: {{ "36rem" if compact else "44rem" }}; border: 1px solid #e2e8f0; border-radius: .5rem; background: #fff; }
+  #fc-node-detail { min-height: 1.4rem; padding-top: .35rem; font: 13px/1.4 system-ui, sans-serif; color: #334155; overflow-wrap: anywhere; }
+  #fc-evidence { padding: .4rem 0; min-height: 2rem; overflow-wrap: anywhere; font: 13px/1.4 system-ui, sans-serif; }
+  #fc-evidence ul { margin: .4rem 0; padding-left: 1.25rem; }
+  #fc-tiers { font: 12px system-ui, sans-serif; margin-bottom: .4rem; }
+  .fc-tier { display: inline-block; padding: .15rem .45rem; color: white; border-radius: .25rem; font-size: .78rem; }
+  .fc-tier-campaign { background: #d97706; } .fc-tier-operator { background: #9333ea; }
+  .fc-tier-toolkit { background: #0f766e; } .fc-tier-context { background: #64748b; }
+</style>
+<div class="fc-controls">
+  <button id="fc-cases" type="button" aria-pressed="true">{{ labels.case_view }}</button>
+  <button id="fc-entities" type="button" aria-pressed="false">{{ labels.entity_view }}</button>
+  <button id="fc-fit" type="button" title="⤢">⤢</button>
+  {% if not compact %}
+  {% for family in families %}
+  <label><input type="checkbox" class="fc-family" value="{{ family }}" checked>
+    <span class="fc-swatch" style="background: {{ family_colours.get(family, '#64748b') }}"></span>
+    {{ labels.family_names.get(family, family) }}</label>
+  {% endfor %}
+  {% endif %}
+</div>
+<div id="fc-tiers" hidden>{% for tier, name in labels.tier_names.items() %}<span class="fc-tier fc-tier-{{ tier }}">{{ name }}</span> {% endfor %}</div>
+<div id="fc-graph"></div>
+<div id="fc-node-detail" aria-live="polite"></div>
+<div id="fc-evidence"><strong>{{ labels.evidence }}</strong><ul></ul></div>
+<script>{{ library | safe }}</script>
+<script>
+(() => {
+  const views = {{ graph_data | safe }};
+  const familyNames = {{ family_names | safe }};
+  const focused = {{ "true" if focused else "false" }};
+  const palette = {
+    ids: '#D55E00', infra: '#CC79A7', asset: '#E69F00', template: '#0072B2',
+    image: '#009E73', text: '#56B4E9', person: '#000000'
+  };
+  const tierColours = {campaign: '#d97706', operator: '#9333ea', toolkit: '#0f766e', context: '#64748b'};
+  const evidenceList = document.querySelector('#fc-evidence ul');
+  const nodeDetail = document.getElementById('fc-node-detail');
+  const tiers = document.getElementById('fc-tiers');
+  let view = 'cases';
+  let graph;
+
+  const style = [
+    // Labels sit under the node on a light plate, and hide when zoomed far out.
+    {selector: 'node', style: {
+      'label': 'data(label)', 'font-size': 11, 'color': '#0f172a',
+      'text-valign': 'bottom', 'text-halign': 'center', 'text-margin-y': 4,
+      'text-wrap': 'ellipsis', 'text-max-width': 150,
+      'text-background-color': '#ffffff', 'text-background-opacity': 0.85,
+      'text-background-padding': 2, 'text-background-shape': 'roundrectangle',
+      'min-zoomed-font-size': 7,
+      'width': 26, 'height': 26, 'background-color': 'data(fill)',
+      'border-width': 1.5, 'border-color': '#475569'}},
+    {selector: 'node[kind = "case"][!linked]', style: {
+      'width': 14, 'height': 14, 'font-size': 9, 'color': '#64748b', 'border-color': '#94a3b8'}},
+    {selector: 'node[?focus]', style: {
+      'width': 40, 'height': 40, 'border-width': 4, 'border-color': '#0f172a',
+      'font-size': 13, 'font-weight': 'bold', 'z-index': 10}},
+    {selector: 'node[kind = "entity"]', style: {
+      'shape': 'round-rectangle', 'background-color': '#0f766e', 'border-width': 0,
+      'width': 'mapData(df, 2, 10, 12, 30)', 'height': 'mapData(df, 2, 10, 12, 30)',
+      'font-size': 9, 'min-zoomed-font-size': 9}},
+    {selector: 'node[tier = "campaign"]', style: {'background-color': tierColours.campaign}},
+    {selector: 'node[tier = "operator"]', style: {'background-color': tierColours.operator}},
+    {selector: 'node[tier = "toolkit"]', style: {'background-color': tierColours.toolkit}},
+    {selector: 'node[tier = "context"]', style: {'background-color': tierColours.context}},
+    // Parallel family edges form a tight, readable ribbon instead of wide loops.
+    {selector: 'edge', style: {
+      'line-color': 'data(colour)', 'curve-style': 'bezier', 'control-point-step-size': 7,
+      'width': 'mapData(score, 0, 1, 1.5, 4.5)', 'opacity': 0.8}},
+    {selector: 'edge[!family]', style: {'width': 1, 'line-color': '#94a3b8', 'opacity': 0.55,
+      'curve-style': 'haystack'}},
+    {selector: '.fc-faded', style: {'opacity': 0.12, 'text-opacity': 0.2}},
+    {selector: 'edge.fc-hot', style: {'opacity': 1, 'z-index': 9}},
+    {selector: ':selected', style: {'border-width': 4, 'border-color': '#dc2626'}}
+  ];
+
+  function layoutFor(currentView) {
+    if (focused && currentView === 'cases') {
+      // Ego view: the selected case in the middle, its neighbours on a ring around it.
+      return {name: 'concentric', animate: false, fit: true, padding: 40, minNodeSpacing: 70,
+        startAngle: 1.5 * Math.PI, concentric: n => (n.data('focus') ? 2 : 1), levelWidth: () => 1};
+    }
+    return {name: 'cose', animate: false, randomize: false, fit: true, padding: 40,
+      nodeDimensionsIncludeLabels: true, idealEdgeLength: () => (currentView === 'cases' ? 110 : 70),
+      nodeRepulsion: () => (currentView === 'cases' ? 900000 : 250000), nodeOverlap: 24,
+      edgeElasticity: () => 80, gravity: 0.6, componentSpacing: 90, numIter: 1500};
+  }
+
+  // Linked cases get the force layout; cases with no link are lined up in a strip below,
+  // so they neither stretch the layout nor push the clusters into a corner.
+  function placeNodes(cy, currentView) {
+    const loose = cy.nodes().filter(n => n.data('kind') !== 'entity' && !n.data('linked'));
+    const linked = cy.elements().not(loose);
+    if (focused && currentView === 'cases' || !loose.length || !linked.nodes().length) {
+      cy.layout(layoutFor(currentView)).run();
+      return;
+    }
+    linked.layout({...layoutFor(currentView), fit: false}).run();
+    const box = linked.nodes().boundingBox({includeLabels: true});
+    const cols = Math.max(1, Math.min(loose.length, Math.floor(Math.max(box.w, 900) / 140)));
+    const rows = Math.ceil(loose.length / cols);
+    loose.layout({name: 'grid', fit: false, avoidOverlap: true, cols, rows,
+      boundingBox: {x1: box.x1, y1: box.y2 + 80, w: cols * 140, h: rows * 70},
+      sort: (a, b) => a.id().localeCompare(b.id())}).run();
+    cy.fit(undefined, 40);
+  }
+
+  function draw() {
+    const checks = [...document.querySelectorAll('.fc-family')];
+    const enabled = new Set(checks.length ? checks.filter(x => x.checked).map(x => x.value)
+                                          : Object.keys(palette));
+    const data = views[view];
+    const elements = [
+      ...data.nodes.map(node => ({data: node})),
+      ...data.edges.filter(edge => !edge.family || enabled.has(edge.family))
+        .map(edge => ({data: {...edge, colour: palette[edge.family] || '#64748b',
+                              score: edge.score == null ? 0.5 : edge.score}}))
+    ];
+    if (graph) graph.destroy();
+    evidenceList.replaceChildren();
+    nodeDetail.textContent = '';
+    tiers.hidden = view !== 'entities';
+    document.getElementById('fc-cases').setAttribute('aria-pressed', String(view === 'cases'));
+    document.getElementById('fc-entities').setAttribute('aria-pressed', String(view === 'entities'));
+    graph = cytoscape({
+      container: document.getElementById('fc-graph'), elements, style,
+      layout: {name: 'preset'}, wheelSensitivity: 0.25, minZoom: 0.15, maxZoom: 3
+    });
+    placeNodes(graph, view);
+    graph.on('tap', 'edge', event => {
+      const edge = event.target.data();
+      evidenceList.replaceChildren();
+      if (edge.family) {
+        const related = views.cases.edges.filter(other =>
+          (other.source === edge.source && other.target === edge.target) ||
+          (other.source === edge.target && other.target === edge.source));
+        for (const signal of related) {
+          const item = document.createElement('li');
+          item.textContent = `${familyNames[signal.family] || signal.family}: ${Number(signal.score).toFixed(2)} `;
+          const bar = document.createElement('meter');
+          bar.min = 0; bar.max = 1; bar.value = Number(signal.score);
+          item.appendChild(bar);
+          evidenceList.appendChild(item);
+        }
+      }
+      for (const detail of edge.evidence || []) {
+        const item = document.createElement('li');
+        item.textContent = detail;
+        evidenceList.appendChild(item);
+      }
+    });
+    // Hovering a node shows its full label and fades everything not linked to it.
+    graph.on('mouseover', 'node', event => {
+      const node = event.target;
+      nodeDetail.textContent = node.data('full_label');
+      const near = node.closedNeighborhood();
+      graph.elements().not(near).addClass('fc-faded');
+      near.edges().addClass('fc-hot');
+    });
+    graph.on('mouseout', 'node', () => {
+      graph.elements().removeClass('fc-faded').removeClass('fc-hot');
+    });
+    graph.on('tap', 'node', event => { nodeDetail.textContent = event.target.data('full_label'); });
+  }
+  document.getElementById('fc-cases').addEventListener('click', () => { view = 'cases'; draw(); });
+  document.getElementById('fc-entities').addEventListener('click', () => { view = 'entities'; draw(); });
+  document.getElementById('fc-fit').addEventListener('click', () => graph && graph.fit(undefined, 40));
+  for (const checkbox of document.querySelectorAll('.fc-family')) checkbox.addEventListener('change', draw);
+  draw();
+})();
+</script>

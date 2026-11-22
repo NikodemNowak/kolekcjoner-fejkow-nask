@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kf-config
+  namespace: kolekcjoner
+data:
+  # Run directory served by the API (relative to /app, i.e. on the kf-runs volume).
+  APP_RUN_DIR: runs/base
+  APP_LOG_LEVEL: INFO
+  FAKECOLLECTOR_DEVICE: cpu
+  # Passive enrichment needs the network; it is off and the NetworkPolicy blocks egress.
+  ALLOW_ENRICH: "false"

@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+# Pipeline outputs
+runs/
+# Env / secrets
+.env
+.env.*
+!.env.example
+# Data and models
+data/*
+!data/README.md
+!data/fixtures/
+*.onnx
+*.pt
+*.safetensors
+*.gguf
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# Leftovers from the removed React frontend must never be committed
+node_modules/

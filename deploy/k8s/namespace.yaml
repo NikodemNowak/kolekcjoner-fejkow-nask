@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kolekcjoner
+  labels:
+    app.kubernetes.io/part-of: kolekcjoner-fejkow
+    # Pod Security Admission: reject anything that is not "restricted".
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/warn: restricted

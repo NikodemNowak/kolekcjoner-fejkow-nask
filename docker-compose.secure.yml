@@ -1,0 +1,30 @@
+# Hardened run for an isolated environment, on top of docker-compose.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.secure.yml up
+# - the API has no route to the internet (internal network); models are baked into the image,
+# - no Linux capabilities, no privilege escalation, non-root users (set in the Dockerfile),
+# - CPU/memory limits, UI and API published on localhost only.
+services:
+  app:
+    networks: [backend]
+    ports: !override ["127.0.0.1:8600:8600"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs: ["/tmp"]
+    environment: { ALLOW_ENRICH: "false" }
+    deploy:
+      resources:
+        limits: { cpus: "4", memory: 6g }
+  web:
+    networks: [backend, frontend]
+    ports: !override ["127.0.0.1:3000:3000"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    read_only: true
+    tmpfs: ["/tmp", "/web/.next/cache"]
+    deploy:
+      resources:
+        limits: { cpus: "1", memory: 1g }
+networks:
+  backend:
+    internal: true  # no egress from containers that are only on this network
+  frontend: {}

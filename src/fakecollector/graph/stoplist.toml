@@ -1,0 +1,75 @@
+# Platform hosts and CDN IP ranges that never count as evidence on their own.
+# Generic files (fbevents.js, jQuery builds, ...) are NOT listed: document frequency
+# suppresses them. Hosts match exactly or as a parent domain.
+
+hosts = [
+  # Meta
+  "facebook.com", "facebook.net", "fbcdn.net", "instagram.com", "fb.com", "messenger.com",
+  # Google
+  "google.com", "google.pl", "googleapis.com", "gstatic.com", "google-analytics.com",
+  "googletagmanager.com", "doubleclick.net", "googlesyndication.com", "googleadservices.com",
+  "youtube.com", "ytimg.com", "recaptcha.net",
+  # Other ad / analytics platforms
+  "tiktok.com", "tiktokcdn.com", "twitter.com", "x.com", "twimg.com", "bing.com", "clarity.ms",
+  "hotjar.com", "yandex.ru", "yandex.net", "linkedin.com", "pinterest.com",
+  # Public library CDNs and fonts
+  "jsdelivr.net", "cdnjs.cloudflare.com", "cloudflareinsights.com", "jquery.com", "unpkg.com",
+  "bootstrapcdn.com", "fontawesome.com", "fonts.net",
+  # Stock media and hosting platforms (the platform itself, not tenants' subdomains)
+  "unsplash.com", "pexels.com", "netlify.com", "vercel.com", "gravatar.com", "wp.com",
+  "wordpress.org", "w3.org", "schema.org",
+  # SaaS hubs: video players, user-content CDNs, public FX / geo APIs
+  "googleusercontent.com", "pandavideo.com", "pandavideo.com.br", "vimeo.com", "vimeocdn.com",
+  "wistia.com", "er-api.com", "exchangerate-api.com", "ipapi.co", "ip-api.com", "ipinfo.io",
+  # Impersonated brands' own sites and CDNs: the real portal's files on a fake page are
+  # impersonation (brand.*), not infrastructure an operator runs. Keep in sync with the
+  # domains in extractors/brand_rules.py (a test checks it).
+  "gazeta.pl", "wyborcza.pl", "im-g.pl", "tvn24.pl", "tvn.pl", "onet.pl", "wp.pl", "wpimg.pl",
+  "inpost.pl", "pkobp.pl", "pko.pl", "pekao.com.pl", "nbp.pl", "apple.com", "allegro.pl",
+  "allegroimg.com", "mbank.pl", "ing.pl", "ing.com", "santander.pl", "bankmillennium.pl",
+  "aliorbank.pl", "bnpparibas.pl", "interia.pl", "polsat.pl", "polsatnews.pl", "tvp.pl",
+  "tvp.info", "rp.pl", "businessinsider.com.pl", "forbes.pl", "forbes.com", "zus.pl",
+  "orlen.pl", "pge.pl", "gkpge.pl", "olx.pl", "revolut.com", "binance.com", "foxnews.com",
+  "nbc.com", "nbcnews.com", "cnn.com", "bbc.com", "bbc.co.uk", "bbci.co.uk",
+]
+
+# Published edge ranges (cloudflare.com/ips, api.fastly.com/public-ip-list).
+cdn_ip_ranges = [
+  # Cloudflare IPv4
+  "173.245.48.0/20", "103.21.244.0/22", "103.22.200.0/22", "103.31.4.0/22", "141.101.64.0/18",
+  "108.162.192.0/18", "190.93.240.0/20", "188.114.96.0/20", "197.234.240.0/22",
+  "198.41.128.0/17", "162.158.0.0/15", "104.16.0.0/13", "104.24.0.0/14", "172.64.0.0/13",
+  "131.0.72.0/22",
+  # Cloudflare IPv6
+  "2400:cb00::/32", "2606:4700::/32", "2803:f800::/32", "2405:b500::/32", "2405:8100::/32",
+  "2a06:98c0::/29", "2c0f:f248::/32",
+  # Fastly IPv4 / IPv6
+  "151.101.0.0/16", "199.232.0.0/16", "146.75.0.0/17", "23.235.32.0/20", "43.249.72.0/22",
+  "103.244.50.0/24", "103.245.222.0/23", "103.245.224.0/24", "104.156.80.0/20",
+  "140.248.64.0/18", "140.248.128.0/17", "157.52.64.0/18", "167.82.0.0/17", "172.111.64.0/18",
+  "185.31.16.0/22", "199.27.72.0/21",
+  "2a04:4e40::/32", "2a04:4e42::/32",
+]
+
+# Default name servers of hosting providers, registrars and parking services: shared by
+# thousands of unrelated domains, so an NS pair under them is no operator evidence.
+# Cloudflare is not listed: it assigns NS pairs per account (from a pool, so the
+# document-frequency cap still applies).
+hosting_ns = [
+  "domaincontrol.com", "registrar-servers.com", "dns-parking.com", "hostinger.com",
+  "ovh.net", "ovh.ca", "anycast.me", "home.pl", "nazwa.pl", "cyber-folks.pl", "lh.pl",
+  "awsdns-", "azure-dns.", "googledomains.com", "domains.google", "porkbun.com",
+  "namesilo.com", "dnsowl.com", "name.com", "hetzner.com", "digitalocean.com",
+  "linode.com", "vultr.com", "afternic.com", "sedoparking.com", "bodis.com",
+  "parkingcrew.net", "ui-dns.", "hostgator.com", "bluehost.com", "dreamhost.com",
+  "namecheaphosting.com", "web-hosting.com", "ionos.", "one.com", "gandi.net",
+]
+
+# Third-party library builds saved with a page: identical across unrelated sites, so their
+# hashes are no campaign evidence. Matched against the file name and its first bytes.
+library_patterns = [
+  "jquery", "bootstrap", "swiper", "lodash", "underscore", "gsap", "popper", "slick",
+  "owl\\.carousel", "font-?awesome", "lazysizes", "moment(\\.min)?\\.js", "aos(\\.min)?\\.(js|css)",
+  "animate(\\.min)?\\.css", "normalize(\\.min)?\\.css", "fancybox", "select2", "vue(\\.min)?\\.js",
+  "react(-dom)?(\\.production)?(\\.min)?\\.js", "fbevents", "gtag", "analytics\\.js",
+]

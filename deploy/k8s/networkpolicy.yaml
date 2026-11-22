@@ -1,0 +1,62 @@
+# Offline by design: no pod in the namespace may open connections outside it
+# (models and reference sets are baked into the image). Only DNS inside the cluster,
+# web -> api, and incoming traffic to the web UI are allowed.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: kolekcjoner
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns
+  namespace: kolekcjoner
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector: {}
+          podSelector: { matchLabels: { k8s-app: kube-dns } }
+      ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: web-to-api
+  namespace: kolekcjoner
+spec:
+  podSelector: { matchLabels: { app.kubernetes.io/name: kf-web } }
+  policyTypes: [Egress]
+  egress:
+    - to: [{ podSelector: { matchLabels: { app.kubernetes.io/name: kf-api } } }]
+      ports: [{ protocol: TCP, port: 8600 }]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: api-from-web
+  namespace: kolekcjoner
+spec:
+  podSelector: { matchLabels: { app.kubernetes.io/name: kf-api } }
+  policyTypes: [Ingress]
+  ingress:
+    - from: [{ podSelector: { matchLabels: { app.kubernetes.io/name: kf-web } } }]
+      ports: [{ protocol: TCP, port: 8600 }]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: web-ingress
+  namespace: kolekcjoner
+spec:
+  podSelector: { matchLabels: { app.kubernetes.io/name: kf-web } }
+  policyTypes: [Ingress]
+  ingress:
+    - ports: [{ protocol: TCP, port: 3000 }]

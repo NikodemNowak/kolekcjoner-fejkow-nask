@@ -1,0 +1,52 @@
+{
+  "_comment": "Evaluation figures shown on /methodology. Source: the team's latest real-corpus evaluation of main (scripts/evaluate.py, strict labels, profile full) and the hidden-test simulation of sparse inputs, as reported by the team on 2026-11-21. Thresholds: src/fakecollector/graph/config.py (EdgeConfig). Nothing here is estimated; rerun the evaluation and update this file when the pipeline changes.",
+  "updated": "2026-11-21",
+  "corpus": "25 zgłoszeń z dwóch korpusów (15 z kopii NASK i 10 od mentora), etykiety ścisłe, profil pełny.",
+  "clustering": [
+    { "level": "Kampanie", "p": 1.0, "r": 0.947, "f1": 0.973, "bcubed": 0.98, "ari": 0.971 },
+    { "level": "Sprawcy", "p": null, "r": null, "f1": 1.0, "bcubed": null, "ari": null }
+  ],
+  "openSet": [
+    {
+      "split": "Odłożony wariant znanej kampanii",
+      "question": "Czy nowy wariant wraca do swojej kampanii?",
+      "accuracy": 1.0,
+      "errorLabel": "FRR",
+      "error": 0.0,
+      "review": null
+    },
+    {
+      "split": "Pominięta cała kampania",
+      "question": "Czy nieznana kampania zostaje uznana za nową?",
+      "accuracy": 0.92,
+      "errorLabel": "FAR",
+      "error": 0.0,
+      "review": 0.08
+    },
+    {
+      "split": "Między korpusami (kopia NASK → mentor)",
+      "question": "Czy baza z jednego źródła rozpoznaje materiały z drugiego?",
+      "accuracy": 0.9,
+      "errorLabel": "FAR",
+      "error": 0.0,
+      "review": null
+    }
+  ],
+  "sparse": [
+    { "input": "Tylko zapisana strona (MHTML)", "correct": 8, "total": 8, "unit": "wariantów" },
+    { "input": "Tylko ruch sieciowy (HAR)", "correct": 7, "total": 8, "unit": "wariantów" },
+    { "input": "Tylko wydruk strony (PDF)", "correct": 7, "total": 8, "unit": "wariantów" },
+    { "input": "Zdegradowane zrzuty reklam (kadrowanie, kompresja)", "correct": 15, "total": 17, "unit": "zrzutów" }
+  ],
+  "wild": {
+    "falseLinks": 0,
+    "knownVariants": "w trakcie"
+  },
+  "config": {
+    "tau_assign": 0.6,
+    "assign_margin": 0.1,
+    "review_min_score": 0.5,
+    "strong_link": 0.9,
+    "tierCaps": { "campaign": 1.0, "operator": 0.4, "toolkit": 0.25, "context": 0.35 }
+  }
+}

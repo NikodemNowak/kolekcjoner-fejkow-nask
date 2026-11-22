@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+<channel>
+<title>Fixture fact-checker</title>
+<item>
+<title>Rafał Brzoska nie został postrzelony. Kolejny scam z fałszywą reklamą</title>
+<link>https://factcheck.example/fake_news/brzoska-scam/</link>
+<pubDate>Fri, 20 Nov 2026 10:00:00 +0000</pubDate>
+<content:encoded><![CDATA[
+<p>Oszuści publikują fałszywe reklamy na Facebooku. Reklama prowadzi do fałszywego artykułu
+o zamachu na Rafała Brzoskę i platformie inwestycyjnej.</p>
+<figure><img src="https://factcheck.example/uploads/ad1.png" alt="Fałszywa reklama z Rafałem Brzoską"/>
+<figcaption>Źródło: Facebook, reklama sponsorowana</figcaption></figure>
+<p><img data-src="https://factcheck.example/uploads/ad2.png" src="data:image/gif;base64,AAAA" alt="Fałszywy artykuł Gazeta.pl"/></p>
+<p><img src="https://scam-landing.example/banner.png" alt="baner ze strony oszustów"/></p>
+<p><img src="https://factcheck.example/uploads/icon.png" alt="ikona"/></p>
+]]></content:encoded>
+</item>
+<item>
+<title>Polityk nie powiedział tych słów. Fałszywy cytat</title>
+<link>https://factcheck.example/fake_news/cytat/</link>
+<pubDate>Thu, 19 Nov 2026 10:00:00 +0000</pubDate>
+<content:encoded><![CDATA[<p>Polityczny cytat bez związku z reklamami, długi tekst. </p>
+<img src="https://factcheck.example/uploads/politics.png" alt="wpis"/>]]></content:encoded>
+</item>
+<item>
+<title>Stary scam z 2023 roku</title>
+<link>https://factcheck.example/fake_news/old/</link>
+<pubDate>Mon, 02 Jan 2023 10:00:00 +0000</pubDate>
+<content:encoded><![CDATA[<p>scam</p>]]></content:encoded>
+</item>
+</channel>
+</rss>
